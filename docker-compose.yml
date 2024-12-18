@@ -1,0 +1,6 @@
+services:
+  helloserver:
+    image: emorydu/helloworld:latest
+  curl:
+    image: appropriate/curl
+    entrypoint: sh -c "sleep 3 && curl -v helloserver:8080/helloworld -d '{\"name\":\"World\"}'"
