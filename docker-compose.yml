@@ -1,0 +1,58 @@
+services:
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.11.1
+    command: -f /etc/logstash/conf.d/
+    ports:
+      - 5000:5000
+    volumes:
+      - ./logstash.conf:/etc/logstash/conf.d/logstash.conf
+    environment:
+      LS_JAVA_OPTS: -Xmx512m -Xms512m
+    depends_on:
+      - elasticsearch
+  kittenserver:
+    image: kittenserver:logging
+    command: sh -c '/kittenserver'
+    ports:
+      - 8091:8091
+    environment:
+      - "STATSD=statsd:9125"
+      - "LOGSTASH=logstash:5000"
+    depends_on:
+      - statsd
+      - logstash
+  prometheus:
+    image: prom/prometheus
+    depends_on:
+      - statsd
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+  statsd:
+    image: prom/statsd-exporter
+  graphana:
+    image: grafana/grafana
+    ports:
+      - 3000:3000
+    depends_on:
+      - prometheus
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.11.1
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: -Xmx512m -Xms512m
+      node.name: es01
+      cluster.name: elasticsearch
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.11.1
+    ports:
+      - 5601:5601
+      - 9600:9600
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
